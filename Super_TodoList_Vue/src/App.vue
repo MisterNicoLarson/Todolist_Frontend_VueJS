@@ -25,7 +25,7 @@
       task.taskData.hour.trim() !== ''
     );
 
-    if (allTasksComplete) {
+    if (allTasksComplete && !tasksInProgress.value.some(task => task.isEmpty)) {
       idTask++;
       tasksInProgress.value.unshift({
         id: idTask,
@@ -149,12 +149,69 @@
     removeTaskById(task.id);
     tasksInProgress.value.unshift(task);
   };
+
+  /**
+   * Initializes the drag event for a task.
+   * @param {DragEvent} event - The drag event.
+   * @param {Object} task - The task being dragged.
+   * @param {number} task.id - The ID of the task.
+   * @param {Object} task.taskData - The data of the task.
+   * @param {string} task.taskData.taskName - The name of the task.
+   * @param {string} task.taskData.deadline - The deadline of the task.
+   * @param {string} task.taskData.hour - The hour of the task.
+   * @param {boolean} task.isEmpty - Indicates if the task is empty.
+   * @param {boolean} task.isTaskNameEmpty - Indicates if the task name is empty.
+   * @param {boolean} task.isDeadlineEmpty - Indicates if the deadline is empty.
+   * @param {boolean} task.isHourEmpty - Indicates if the hour is empty.
+   */
+  const startDrag = (event: DragEvent, task: { id: number, taskData: { taskName: string, deadline: string, hour: string }, isEmpty: boolean, isTaskNameEmpty: boolean, isDeadlineEmpty: boolean, isHourEmpty: boolean, isEditable: boolean }) => {
+    console.log(task);
+    event.dataTransfer!.dropEffect = 'move';
+    event.dataTransfer!.effectAllowed = 'move';
+    event.dataTransfer!.setData('itemID', task.id.toString());
+  };
+
+  /**
+   * Handles the dragover event to allow dropping.
+   * @param {DragEvent} event - The dragover event.
+   */
+  const onDragOver = (event: DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer!.dropEffect = 'move';
+  };
+
+  /**
+   * Handles the drop event to move a task to a specific column.
+   * @param {DragEvent} event - The drop event.
+   * @param {string} status - The status of the column to move the task to.
+   */
+  const onDrop = (event: DragEvent, status: string) => {
+    const itemID = parseInt(event.dataTransfer!.getData('itemID'));
+    const task = findTaskById(itemID);
+    if (task) {
+      switch (status) {
+        case 'inProgress':
+          moveTaskToInProgress(task);
+          break;
+        case 'done':
+          moveTaskToDone(task);
+          break;
+        case 'failed':
+          moveTaskToFailed(task);
+          break;
+      }
+    }
+  };
 </script>
 
+
 <template>
+  <!-- 
+    Resource Drag and drop : https://www.youtube.com/watch?v=-kZLD40d-tI
+  -->
   <NewTaskButton @click="addTask"></NewTaskButton>
   <div class="row">
-    <div class="block">
+    <div class="block" @dragover="onDragOver" @drop="onDrop($event, 'inProgress')">
       <ColumnTable :h1_title="inProgress">
         <Task
           v-for="task in tasksInProgress"
@@ -169,10 +226,12 @@
             'deadline-empty': task.isDeadlineEmpty,
             'hour-empty': task.isHourEmpty
           }"
+          draggable="true"
+          @dragstart="startDrag($event, task)"
         ></Task>
       </ColumnTable>
     </div>
-    <div class="block">
+    <div class="block" @dragover="onDragOver" @drop="onDrop($event, 'done')">
       <ColumnTable :h1_title="done">
         <Task
           v-for="task in tasksDone"
@@ -187,10 +246,12 @@
             'deadline-empty': task.isDeadlineEmpty,
             'hour-empty': task.isHourEmpty
           }"
+          draggable="true"
+          @dragstart="startDrag($event, task)"
         ></Task>
       </ColumnTable>
     </div>
-    <div class="block">
+    <div class="block" @dragover="onDragOver" @drop="onDrop($event, 'failed')">
       <ColumnTable :h1_title="failed">
         <Task
           v-for="task in tasksFailed"
