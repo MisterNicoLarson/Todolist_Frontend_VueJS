@@ -1,0 +1,4 @@
+npm create vite@latest Super_TodoList_Vue --template vue
+cd Super_TodoList_Vue
+npm install
+npm run dev
