@@ -3,7 +3,8 @@ import { ref, watch } from 'vue';
 
 const props = defineProps<{
   taskData: { taskName: string, deadline: string, hour: string },
-  isEditable: boolean
+  isEditable: boolean,
+  backgroundColor: string
 }>();
 
 const taskName = ref(props.taskData.taskName);
@@ -18,7 +19,7 @@ watch([taskName, deadline, hour], ([newTaskName, newDeadline, newHour]) => {
 </script>
 
 <template>
-  <div class='post-it'>
+  <div class='post-it' :style="{ backgroundColor: props.backgroundColor }">
     <div class="row">
       <p class="column">Task name</p>
       <input class="column" maxlength="50" v-model="taskName" :disabled="!props.isEditable" @input="emit('update:taskData', { taskName, deadline, hour })"></input>
@@ -33,6 +34,12 @@ watch([taskName, deadline, hour], ([newTaskName, newDeadline, newHour]) => {
       <p class="column">Hour</p>
       <input class="column" type="time" v-model="hour" :disabled="!props.isEditable" @input="emit('update:taskData', { taskName, deadline, hour })"></input>
     </div>
+
+    <!-- Remplacement de ::before -->
+    <div class="corner"></div>
+
+    <!-- Remplacement de ::after -->
+    <div class="curve"></div>
   </div>
 </template>
 
@@ -40,10 +47,9 @@ watch([taskName, deadline, hour], ([newTaskName, newDeadline, newHour]) => {
 /* post-it :  https://codepen.io/jweden/pen/kGBBpM */
 .post-it {
   position: relative;
-  background: #ffa;
   overflow: hidden;
-  margin: 30px auto;
-  padding: 20px;
+  margin: 5px auto;
+  padding: 50px;
   border-radius: 0 0 0 30px/45px;
   box-shadow:
     inset 0 -40px 40px rgba(0, 0, 0, 0.2),
@@ -58,13 +64,12 @@ watch([taskName, deadline, hour], ([newTaskName, newDeadline, newHour]) => {
   box-sizing: border-box;
 }
 
-.post-it:before {
-  content: "";
-  display: block;
+/* Remplacement de ::before */
+.corner {
   position: absolute;
   width: 20px;
   height: 25px;
-  background: #ffa;
+  background: inherit;
   box-shadow:
     3px -2px 10px rgba(0, 0, 0, 0.2),
     inset 15px -15px 15px rgba(0, 0, 0, 0.3);
@@ -74,9 +79,8 @@ watch([taskName, deadline, hour], ([newTaskName, newDeadline, newHour]) => {
   transform: skewX(25deg);
 }
 
-.post-it:after {
-  content: "";
-  display: block;
+/* Remplacement de ::after */
+.curve {
   position: absolute;
   width: 75%;
   height: 20px;
@@ -93,15 +97,14 @@ watch([taskName, deadline, hour], ([newTaskName, newDeadline, newHour]) => {
 .column {
   flex: 1;
   text-align: left;
-  margin: 0 10;
+  margin: 0 10px;
 }
 
 input {
   padding: 5px;
   border: 1px solid #ccc;
   border-radius: 5px;
-  width: auto;
-  min-width: 50px;
+  min-width: 100px;
 }
 
 p {
