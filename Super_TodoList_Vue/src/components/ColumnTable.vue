@@ -1,14 +1,49 @@
 <script setup lang="ts">
-defineProps({
+import { defineProps, defineEmits } from 'vue';
+
+const props = defineProps({
   h1_title: {
     type: String,
     required: true
   }
 });
+
+const emit = defineEmits(['drop', 'startDrag']);
+
+/**
+ * Initializes the drag event for a task.
+ * @param {DragEvent} event - The drag event.
+ * @param {number} taskId - The ID of the task being dragged.
+ */
+const startDrag = (event: DragEvent, taskId: number) => {
+  event.dataTransfer!.dropEffect = 'move';
+  event.dataTransfer!.effectAllowed = 'move';
+  event.dataTransfer!.setData('itemID', taskId.toString());
+  emit('startDrag', event, taskId);
+};
+
+/**
+ * Handles the dragover event to allow dropping.
+ * @param {DragEvent} event - The dragover event.
+ */
+const onDragOver = (event: DragEvent) => {
+  event.preventDefault();
+  event.dataTransfer!.dropEffect = 'move';
+};
+
+/**
+ * Handles the drop event to move a task to a specific column.
+ * @param {DragEvent} event - The drop event.
+ */
+const onDrop = (event: DragEvent) => {
+  event.preventDefault();
+  const itemID = parseInt(event.dataTransfer!.getData('itemID'));
+  emit('drop', itemID);
+};
 </script>
 
 <template>
-  <div class="container">
+  <div class="container" @dragover="onDragOver" @drop="onDrop">
     <div class="title-column">
       <h1>{{ h1_title }}</h1>
     </div>
@@ -17,7 +52,6 @@ defineProps({
     </div>
   </div>
 </template>
-
 
 <style>
 :root {

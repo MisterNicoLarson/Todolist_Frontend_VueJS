@@ -1,0 +1,7 @@
+Todo :
+- change the color of the task randomly when you create it
+- remove a task 
+- red enlightment
+- a task cant be empty in Done and Failed
+- adaptivite
+- ajouter une colone todo 

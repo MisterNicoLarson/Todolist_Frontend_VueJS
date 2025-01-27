@@ -8,26 +8,27 @@
   const inProgress = "In Progress";
   const done = "Done !";
   const failed = "Failed";
+  const todo = "Todo";
 
   const tasksInProgress = ref<{ id: number, taskData: { taskName: string, deadline: string, hour: string }, isEmpty: boolean, isTaskNameEmpty: boolean, isDeadlineEmpty: boolean, isHourEmpty: boolean, isEditable: boolean }[]>([]);
   const tasksDone = ref<{ id: number, taskData: { taskName: string, deadline: string, hour: string }, isEmpty: boolean, isTaskNameEmpty: boolean, isDeadlineEmpty: boolean, isHourEmpty: boolean, isEditable: boolean }[]>([]);
   const tasksFailed = ref<{ id: number, taskData: { taskName: string, deadline: string, hour: string }, isEmpty: boolean, isTaskNameEmpty: boolean, isDeadlineEmpty: boolean, isHourEmpty: boolean, isEditable: boolean }[]>([]);
-
+  const tasksTodo =  ref<{ id: number, taskData: { taskName: string, deadline: string, hour: string }, isEmpty: boolean, isTaskNameEmpty: boolean, isDeadlineEmpty: boolean, isHourEmpty: boolean, isEditable: boolean }[]>([]);
   let idTask = 0;
 
   /**
    * Adds a new empty task to the in-progress tasks list if all existing tasks are complete.
    */
   const addTask = () => {
-    const allTasksComplete = tasksInProgress.value.every(task =>
+    const allTasksComplete = tasksTodo.value.every(task =>
       task.taskData.taskName.trim() !== '' &&
       task.taskData.deadline.trim() !== '' &&
       task.taskData.hour.trim() !== ''
     );
 
-    if (allTasksComplete && !tasksInProgress.value.some(task => task.isEmpty)) {
+    if (allTasksComplete && !tasksTodo.value.some(task => task.isEmpty)) {
       idTask++;
-      tasksInProgress.value.unshift({
+      tasksTodo.value.unshift({
         id: idTask,
         taskData: { taskName: '', deadline: '', hour: '' },
         isEmpty: true,
@@ -57,7 +58,7 @@
       task.isEmpty = task.isTaskNameEmpty && task.isDeadlineEmpty && task.isHourEmpty;
 
       if (isTaskFailed(task.taskData.deadline, task.taskData.hour)) {
-        moveTaskToFailed(task);
+        moveTask(task, 'failed');
       }
     }
   };
@@ -75,25 +76,6 @@
   };
 
   /**
-   * Moves a task to the "Failed" column.
-   * @param {Object} task - The task to move.
-   * @param {number} task.id - The ID of the task.
-   * @param {Object} task.taskData - The data of the task.
-   * @param {string} task.taskData.taskName - The name of the task.
-   * @param {string} task.taskData.deadline - The deadline of the task.
-   * @param {string} task.taskData.hour - The hour of the task.
-   * @param {boolean} task.isEmpty - Indicates if the task is empty.
-   * @param {boolean} task.isTaskNameEmpty - Indicates if the task name is empty.
-   * @param {boolean} task.isDeadlineEmpty - Indicates if the deadline is empty.
-   * @param {boolean} task.isHourEmpty - Indicates if the hour is empty.
-   */
-  const moveTaskToFailed = (task: { id: number, taskData: { taskName: string, deadline: string, hour: string }, isEmpty: boolean, isTaskNameEmpty: boolean, isDeadlineEmpty: boolean, isHourEmpty: boolean, isEditable: boolean }) => {
-    task.isEditable = false;
-    removeTaskById(task.id);
-    tasksFailed.value.unshift(task);
-  };
-
-  /**
    * Finds a task by its ID in all columns.
    * @param {number} id - The ID of the task to find.
    * @returns {Object|undefined} - Returns the found task or undefined if no task is found.
@@ -101,7 +83,8 @@
   const findTaskById = (id: number) => {
     return tasksInProgress.value.find(t => t.id === id) ||
            tasksDone.value.find(t => t.id === id) ||
-           tasksFailed.value.find(t => t.id === id);
+           tasksFailed.value.find(t => t.id === id) ||
+           tasksTodo.value.find(t => t.id === id);
   };
 
   /**
@@ -112,10 +95,11 @@
     tasksInProgress.value = tasksInProgress.value.filter(t => t.id !== id);
     tasksDone.value = tasksDone.value.filter(t => t.id !== id);
     tasksFailed.value = tasksFailed.value.filter(t => t.id !== id);
+    tasksTodo.value = tasksTodo.value.filter(t => t.id !== id);
   };
 
   /**
-   * Moves a task to the "Done" column.
+   * Moves a task to a specific column.
    * @param {Object} task - The task to move.
    * @param {number} task.id - The ID of the task.
    * @param {Object} task.taskData - The data of the task.
@@ -126,141 +110,128 @@
    * @param {boolean} task.isTaskNameEmpty - Indicates if the task name is empty.
    * @param {boolean} task.isDeadlineEmpty - Indicates if the deadline is empty.
    * @param {boolean} task.isHourEmpty - Indicates if the hour is empty.
+   * @param {string} status - The status of the column to move the task to.
    */
-  const moveTaskToDone = (task: { id: number, taskData: { taskName: string, deadline: string, hour: string }, isEmpty: boolean, isTaskNameEmpty: boolean, isDeadlineEmpty: boolean, isHourEmpty: boolean, isEditable: boolean }) => {
+  const moveTask = (task: { id: number, taskData: { taskName: string, deadline: string, hour: string }, isEmpty: boolean, isTaskNameEmpty: boolean, isDeadlineEmpty: boolean, isHourEmpty: boolean, isEditable: boolean }, status: string) => {
     removeTaskById(task.id);
-    tasksDone.value.unshift(task);
-  };
-
-  /**
-   * Moves a task to the "In Progress" column.
-   * @param {Object} task - The task to move.
-   * @param {number} task.id - The ID of the task.
-   * @param {Object} task.taskData - The data of the task.
-   * @param {string} task.taskData.taskName - The name of the task.
-   * @param {string} task.taskData.deadline - The deadline of the task.
-   * @param {string} task.taskData.hour - The hour of the task.
-   * @param {boolean} task.isEmpty - Indicates if the task is empty.
-   * @param {boolean} task.isTaskNameEmpty - Indicates if the task name is empty.
-   * @param {boolean} task.isDeadlineEmpty - Indicates if the deadline is empty.
-   * @param {boolean} task.isHourEmpty - Indicates if the hour is empty.
-   */
-  const moveTaskToInProgress = (task: { id: number, taskData: { taskName: string, deadline: string, hour: string }, isEmpty: boolean, isTaskNameEmpty: boolean, isDeadlineEmpty: boolean, isHourEmpty: boolean, isEditable: boolean }) => {
-    removeTaskById(task.id);
-    tasksInProgress.value.unshift(task);
-  };
-
-  /**
-   * Initializes the drag event for a task.
-   * @param {DragEvent} event - The drag event.
-   * @param {Object} task - The task being dragged.
-   * @param {number} task.id - The ID of the task.
-   * @param {Object} task.taskData - The data of the task.
-   * @param {string} task.taskData.taskName - The name of the task.
-   * @param {string} task.taskData.deadline - The deadline of the task.
-   * @param {string} task.taskData.hour - The hour of the task.
-   * @param {boolean} task.isEmpty - Indicates if the task is empty.
-   * @param {boolean} task.isTaskNameEmpty - Indicates if the task name is empty.
-   * @param {boolean} task.isDeadlineEmpty - Indicates if the deadline is empty.
-   * @param {boolean} task.isHourEmpty - Indicates if the hour is empty.
-   */
-  const startDrag = (event: DragEvent, task: { id: number, taskData: { taskName: string, deadline: string, hour: string }, isEmpty: boolean, isTaskNameEmpty: boolean, isDeadlineEmpty: boolean, isHourEmpty: boolean, isEditable: boolean }) => {
-    console.log(task);
-    event.dataTransfer!.dropEffect = 'move';
-    event.dataTransfer!.effectAllowed = 'move';
-    event.dataTransfer!.setData('itemID', task.id.toString());
-  };
-
-  /**
-   * Handles the dragover event to allow dropping.
-   * @param {DragEvent} event - The dragover event.
-   */
-  const onDragOver = (event: DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer!.dropEffect = 'move';
+    switch (status) {
+      case 'todo':
+        tasksTodo.value.unshift(task);
+        break;
+      case 'inProgress':
+        tasksInProgress.value.unshift(task);
+        break;
+      case 'done':
+        tasksDone.value.unshift(task);
+        break;
+      case 'failed':
+        task.isEditable = false;
+        tasksFailed.value.unshift(task);
+        break;
+    }
   };
 
   /**
    * Handles the drop event to move a task to a specific column.
-   * @param {DragEvent} event - The drop event.
+   * @param {number} itemID - The ID of the task to move.
    * @param {string} status - The status of the column to move the task to.
    */
-  const onDrop = (event: DragEvent, status: string) => {
-    const itemID = parseInt(event.dataTransfer!.getData('itemID'));
+  const handleDrop = (itemID: number, status: string) => {
     const task = findTaskById(itemID);
     if (task) {
-      switch (status) {
-        case 'inProgress':
-          moveTaskToInProgress(task);
-          break;
-        case 'done':
-          moveTaskToDone(task);
-          break;
-        case 'failed':
-          moveTaskToFailed(task);
-          break;
-      }
+      moveTask(task, status);
     }
+  };
+
+  /**
+   * Handles the startDrag event to initialize the drag event for a task.
+   * @param {DragEvent} event - The drag event.
+   * @param {number} taskId - The ID of the task being dragged.
+   */
+  const handleStartDrag = (event: DragEvent, taskId: number) => {
+    event.dataTransfer!.dropEffect = 'move';
+    event.dataTransfer!.effectAllowed = 'move';
+    event.dataTransfer!.setData('itemID', taskId.toString());
   };
 </script>
 
-
 <template>
-  <!-- 
+  <!--
     Resource Drag and drop : https://www.youtube.com/watch?v=-kZLD40d-tI
   -->
   <NewTaskButton @click="addTask"></NewTaskButton>
   <div class="row">
-    <div class="block" @dragover="onDragOver" @drop="onDrop($event, 'inProgress')">
-      <ColumnTable :h1_title="inProgress">
+    <div class="block">
+      <ColumnTable :h1_title="todo" @drop="handleDrop($event, 'todo')">
+        <Task
+          v-for="task in tasksTodo"
+          :key="task.id"
+          :taskData="task.taskData"
+          :isEditable="task.isEditable"
+          @update:taskData="updateTaskData(task.id, $event)"
+          @moveToInProgress="moveTask(task, 'inProgress')"
+          @moveToDone="moveTask(task, 'done')"
+          @moveToFailed="moveTask(task, 'failed')"
+          :class="{
+            'task-name-empty': task.isTaskNameEmpty,
+            'deadline-empty': task.isDeadlineEmpty,
+            'hour-empty': task.isHourEmpty
+          }"
+          draggable="true"
+          @dragstart="handleStartDrag($event, task.id)"
+        ></Task>
+      </ColumnTable>
+    </div>
+    <div class="block">
+      <ColumnTable :h1_title="inProgress" @drop="handleDrop($event, 'inProgress')">
         <Task
           v-for="task in tasksInProgress"
           :key="task.id"
           :taskData="task.taskData"
           :isEditable="task.isEditable"
           @update:taskData="updateTaskData(task.id, $event)"
-          @moveToDone="moveTaskToDone(task)"
-          @moveToFailed="moveTaskToFailed(task)"
+          @moveToDone="moveTask(task, 'done')"
+          @moveToFailed="moveTask(task, 'failed')"
           :class="{
             'task-name-empty': task.isTaskNameEmpty,
             'deadline-empty': task.isDeadlineEmpty,
             'hour-empty': task.isHourEmpty
           }"
           draggable="true"
-          @dragstart="startDrag($event, task)"
+          @dragstart="handleStartDrag($event, task.id)"
         ></Task>
       </ColumnTable>
     </div>
-    <div class="block" @dragover="onDragOver" @drop="onDrop($event, 'done')">
-      <ColumnTable :h1_title="done">
+    <div class="block">
+      <ColumnTable :h1_title="done" @drop="handleDrop($event, 'done')">
         <Task
           v-for="task in tasksDone"
           :key="task.id"
           :taskData="task.taskData"
           :isEditable="task.isEditable"
           @update:taskData="updateTaskData(task.id, $event)"
-          @moveToInProgress="moveTaskToInProgress(task)"
-          @moveToFailed="moveTaskToFailed(task)"
+          @moveToInProgress="moveTask(task, 'inProgress')"
+          @moveToFailed="moveTask(task, 'failed')"
           :class="{
             'task-name-empty': task.isTaskNameEmpty,
             'deadline-empty': task.isDeadlineEmpty,
             'hour-empty': task.isHourEmpty
           }"
           draggable="true"
-          @dragstart="startDrag($event, task)"
+          @dragstart="handleStartDrag($event, task.id)"
         ></Task>
       </ColumnTable>
     </div>
-    <div class="block" @dragover="onDragOver" @drop="onDrop($event, 'failed')">
-      <ColumnTable :h1_title="failed">
+    <div class="block">
+      <ColumnTable :h1_title="failed" @drop="handleDrop($event, 'failed')">
         <Task
           v-for="task in tasksFailed"
           :key="task.id"
           :taskData="task.taskData"
           :isEditable="task.isEditable"
           @update:taskData="updateTaskData(task.id, $event)"
-          @moveToInProgress="moveTaskToInProgress(task)"
-          @moveToDone="moveTaskToDone(task)"
+          @moveToInProgress="moveTask(task, 'inProgress')"
+          @moveToDone="moveTask(task, 'done')"
           :class="{
             'task-name-empty': task.isTaskNameEmpty,
             'deadline-empty': task.isDeadlineEmpty,
